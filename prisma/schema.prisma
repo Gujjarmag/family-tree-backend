@@ -45,6 +45,9 @@ model Member {
   gender     String? // optional, so user chooses freely
   showFemale Boolean   @default(true) // frontend toggle control
 
+  bio   String?
+  notes String?
+
   // One-to-one spouse relation
   spouseId Int?    @unique
   spouse   Member? @relation("SpouseRelation", fields: [spouseId], references: [id])

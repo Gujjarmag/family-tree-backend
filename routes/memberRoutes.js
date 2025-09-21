@@ -4,6 +4,7 @@ import {
   getTreeMembers,
   deleteMember,
   updateMember,
+  getMemberById,
 } from "../controllers/memberController.js";
 import { verifyToken } from "../middleware/authMiddleware.js";
 import { PrismaClient } from "@prisma/client";
@@ -17,6 +18,9 @@ const router = express.Router();
 // Add member WITH image upload support
 router.post("/", verifyToken, upload.single("photo"), addMember);
 
+// Get member details by ID
+router.get("/details/:id", verifyToken, getMemberById);
+
 // Get all members for a tree
 router.get("/:treeId", verifyToken, getTreeMembers);
 
@@ -29,9 +33,6 @@ router.put(
   upload.single("photo"),
   (req, res, next) => {
     console.log("🟡 PUT /members/:id Request Received");
-    console.log("🔹 Params ID:", req.params.id);
-    console.log("🔹 Body:", req.body);
-    console.log("🔹 Uploaded File:", req.file);
     next();
   },
   updateMember

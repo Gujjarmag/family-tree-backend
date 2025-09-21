@@ -172,23 +172,25 @@ export const updateMember = async (req, res) => {
     console.log(`✅ Member updated: ${req.params.id}`);
 
     const { id } = req.params;
-    const { name, dob, gender } = req.body;
+    const { name, dob, gender, notes } = req.body;
 
-    // ✅ Convert dob into a valid Date or set null if empty
-    let parsedDob = null;
-    if (dob && dob.trim() !== "") {
+    let parsedDob = undefined;
+    if (typeof dob !== "undefined" && dob !== "") {
       parsedDob = new Date(dob);
       if (isNaN(parsedDob)) {
         return res.status(400).json({ message: "Invalid date format" });
       }
+    } else if (typeof dob !== "undefined" && dob === "") {
+      parsedDob = null;
     }
 
-    // Build data object
-    const updatedData = {
-      name,
-      dob: parsedDob,
-      gender,
-    };
+    // Build partial update object (only set fields that exist in request)
+    const updatedData = {};
+    if (typeof name !== "undefined") updatedData.name = name;
+    if (typeof dob !== "undefined") updatedData.dob = parsedDob;
+    if (typeof gender !== "undefined") updatedData.gender = gender;
+    if (typeof notes !== "undefined")
+      updatedData.notes = notes === "" ? null : notes;
 
     // ✅ If a new photo is uploaded, add photoUrl
     if (req.file) {
@@ -210,6 +212,39 @@ export const updateMember = async (req, res) => {
     });
   } catch (error) {
     console.error("❌ Error updating member:", error);
+    res.status(500).json({ message: "Server error" });
+  }
+};
+
+// Get a single member by ID with relationships
+export const getMemberById = async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    const member = await prisma.member.findUnique({
+      where: { id: parseInt(id) },
+      include: {
+        spouse: true,
+        children: true,
+        parent: true,
+      },
+    });
+
+    if (!member) {
+      return res.status(404).json({ message: "Member not found" });
+    }
+
+    // Ensure photoUrl is a full URL if available
+    const updatedMember = {
+      ...member,
+      photoUrl: member.photoUrl
+        ? `http://localhost:5000${member.photoUrl}`
+        : null,
+    };
+
+    res.json(updatedMember);
+  } catch (error) {
+    console.error("Error fetching member:", error);
     res.status(500).json({ message: "Server error" });
   }
 };
